@@ -13,10 +13,9 @@ import uuid
 
 async def upload_file(
     file: UploadFile, 
-    user_id: int, 
     file_type: str = "document",
     allowed_types: list = None,
-    max_size_mb: int = 10,
+    max_size_mb: int = 5,
     media_dir: str = None
 ) -> str:
     
@@ -51,7 +50,7 @@ async def upload_file(
     
     # Generate unique filename
     file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
-    filename = f"{file_type}_{user_id}_{uuid.uuid4()}.{file_extension}"
+    filename = f"{file_type}_{uuid.uuid4()}.{file_extension}"
     file_path = MEDIA_DIR / filename
     
     # Save file

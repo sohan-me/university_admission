@@ -20,3 +20,24 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+
+async def get_active_user(current_user=Depends(get_current_user)):
+    user = current_user
+    if user.is_active:
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Please contact admin to active your account!"
+    )
+
+
+async def get_admin_user(current_user=Depends(get_current_user)):
+    user = current_user
+    if user.is_admin:
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin privileges required"
+    )

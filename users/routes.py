@@ -1,11 +1,10 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Body, Form
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from .schemas import *
 from .cruds import *
 from core.security import create_access_token
 from .dependencies import get_current_user
 from typing import List
 from .models import User
-import json
 
 router = APIRouter()
 
@@ -70,7 +69,6 @@ async def get_agent(agent_id: int, current_user=Depends(get_current_user)):
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Admins only")
     agent = await User.get_or_none(id=agent_id)
-    print(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     return agent
@@ -110,7 +108,6 @@ async def delete_agent(agent_id: int, current_user=Depends(get_current_user)):
 
 
 ''' User profile routes '''
-
 
 
 @router.get("/{user_id}/profile", response_model=UserProfileResponse)
