@@ -1,10 +1,10 @@
-from users.dependencies import get_current_user, get_active_user, get_admin_user
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
-from typing import List
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
+from typing import List, Optional, Union
 from .cruds import *
 from .schemas import *
-from .models import University, Course
+from .models import University, Course, AgentAdmissionApplication, AgentApplicationDocuments, StudentAdmissionApplication, StudentApplicationDocuments
 from users.cruds import upload_file
+from users.dependencies import get_admin_user, get_agent_user, get_active_user
 
 router = APIRouter()
 
@@ -246,3 +246,306 @@ async def upload_course_image(course_id: int, course_image: UploadFile=File(...)
 
 
 ''' Course CRUD End '''
+
+
+''' AgentAdmissionApplication CRUD Start '''
+
+@router.post('/agent/admission-application', response_model=AgentAdmissionApplicationResponse)
+async def create_admission_application(
+    application: AgentAdmissionApplicationCreate, 
+    agent_user=Depends(get_agent_user)
+):
+    if not agent_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application_obj = await create_agent_admission_application(application.dict(), agent_user.id)
+    if not application_obj:
+        raise HTTPException(status_code=400, detail='Could not create admission application!')
+    return application_obj
+
+
+@router.get('/agent/admission-application', response_model=List[AgentAdmissionApplicationResponse])
+async def list_admission_applications(active_user=Depends(get_active_user)):
+    if not active_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    # If admin, show all applications; if agent, show only their applications
+    if active_user.is_admin:
+        applications = await AgentAdmissionApplication.all().prefetch_related(
+            'course', 
+            'course__university', 
+            'course__university__country',
+            'university_one', 
+            'university_one__country',
+            'university_two', 
+            'university_two__country',
+            'university_three', 
+            'university_three__country',
+            'documents'
+        )
+
+    else:
+        applications = await list_agent_admission_applications(active_user.id)
+    
+    if not applications:
+        raise HTTPException(status_code=404, detail='No admission applications found.')
+    return applications
+
+
+@router.get('/agent/admission-application/{application_id}', response_model=AgentAdmissionApplicationResponse)
+async def retrieve_admission_application(
+    application_id: int, 
+    active_user=Depends(get_active_user)
+):
+    if not active_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    # If admin, can view any application; if agent, only their own
+    if active_user.is_admin:
+        application = await AgentAdmissionApplication.get_or_none(id=application_id).prefetch_related(
+            'course', 
+            'university_one', 
+            'university_two', 
+            'university_three',
+            'documents'
+        )
+    else:
+        application = await retrieve_agent_admission_application(application_id, active_user.id)
+    
+    if not application:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return application
+
+
+@router.patch('/agent/admission-application/{application_id}', response_model=AgentAdmissionApplicationResponse)
+async def update_admission_application(
+    application_id: int, 
+    application: AgentAdmissionApplicationUpdate, 
+    agent_user=Depends(get_agent_user)
+):
+    if not agent_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application_obj = await update_agent_admission_application(application_id, application.dict(), agent_user.id)
+    if not application_obj:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return application_obj
+
+
+@router.delete('/agent/admission-application/{application_id}')
+async def delete_admission_application(
+    application_id: int, 
+    agent_user=Depends(get_agent_user)
+):
+    if not agent_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application_deleted = await delete_agent_admission_application(application_id, agent_user.id)
+    if not application_deleted:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return {'detail': 'Admission application deleted.'}
+
+
+''' AgentAdmissionApplication CRUD End '''
+
+
+''' AgentApplicationDocuments CRUD Start '''
+
+
+@router.post('/agent/application-documents/{application_id}/upload', response_model=AgentApplicationDocumentsResponse)
+async def upload_application_documents(
+    application_id: int,
+    files: List[UploadFile] = File(...),
+    field_names: List[str] = Form(...),
+    agent_user=Depends(get_agent_user)
+):
+    if not agent_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    # Verify the application belongs to the agent
+    application = await AgentAdmissionApplication.get_or_none(
+        id=application_id, 
+        agent_id=agent_user.id
+    )
+    if not application:
+        raise HTTPException(status_code=404, detail="Admission application not found")
+    
+    # Get or create documents record for this application
+    documents, created = await AgentApplicationDocuments.get_or_create(
+        admission_application_id=application_id
+    )
+    
+    # Parse field names from comma-separated string
+    field_names_list = [name.strip() for name in field_names[0].split(',') if name.strip()]
+    
+    # Validate field names
+    valid_fields = [
+        'passport', 'masters_certificate', 'masters_transcript', 'honers_certificate',
+        'honers_transcript', 'hsc_certificate', 'hsc_transcript', 'ssc_certificate',
+        'ssc_transcript', 'ielts_certificate', 'cv', 'resume', 'lor', 'job_letter', 'others'
+    ]
+    
+    # Check if number of files matches number of field names
+    if len(files) != len(field_names_list):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Number of files ({len(files)}) must match number of field names ({len(field_names_list)}). Field names: {field_names_list}"
+        )
+    
+    try:
+        for file, field_name in zip(files, field_names_list):
+            # Validate field name
+            if field_name not in valid_fields:
+                raise HTTPException(status_code=400, detail=f"Invalid field name: {field_name}")
+            
+            # Skip if file is empty
+            if not file or file.filename == "":
+                continue
+                
+            file_path = await upload_file(
+                file=file,
+                file_type=f'document_{field_name}',
+                allowed_types=['image/', 'application/pdf'],
+                max_size_mb=5,
+                media_dir='documents'
+            )
+            setattr(documents, field_name, file_path)
+        
+        await documents.save()
+        await documents.fetch_related('admission_application')
+        return documents
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+''' AgentApplicationDocuments CRUD End '''
+
+
+''' StudentAdmissionApplication CRUD Start '''
+
+@router.post('/student/admission-application', response_model=StudentAdmissionApplicationResponse)
+async def create_student_admission_application(
+    application: StudentAdmissionApplicationCreate
+):
+    application_obj = await create_student_admission_application_crud(application.dict())
+    if not application_obj:
+        raise HTTPException(status_code=400, detail='Could not create admission application!')
+    return application_obj
+
+
+@router.get('/student/admission-application', response_model=List[StudentAdmissionApplicationResponse])
+async def list_student_admission_applications(admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    applications = await list_student_admission_applications_crud()
+    if not applications:
+        raise HTTPException(status_code=404, detail='No admission applications found.')
+    return applications
+
+
+@router.get('/student/admission-application/{application_id}', response_model=StudentAdmissionApplicationResponse)
+async def retrieve_student_admission_application(
+    application_id: int, 
+    admin_user=Depends(get_admin_user)
+):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application = await retrieve_student_admission_application_crud(application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return application
+
+
+@router.patch('/student/admission-application/{application_id}', response_model=StudentAdmissionApplicationResponse)
+async def update_student_admission_application(
+    application_id: int, 
+    application: StudentAdmissionApplicationUpdate,
+    admin_user=Depends(get_admin_user)
+):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application_obj = await update_student_admission_application_crud(application_id, application.dict())
+    if not application_obj:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return application_obj
+
+
+@router.delete('/student/admission-application/{application_id}')
+async def delete_student_admission_application(
+    application_id: int,
+    admin_user=Depends(get_admin_user)
+):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application_deleted = await delete_student_admission_application_crud(application_id)
+    if not application_deleted:
+        raise HTTPException(status_code=404, detail='Admission application not found.')
+    return {'detail': 'Admission application deleted.'}
+
+
+@router.post('/student/application-documents/{application_id}/upload', response_model=StudentApplicationDocumentsResponse)
+async def upload_student_application_documents(
+    application_id: int,
+    files: List[UploadFile] = File(...),
+    field_names: List[str] = Form(...),
+):
+    # Verify the application exists
+    application = await StudentAdmissionApplication.get_or_none(id=application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Admission application not found")
+    
+    # Get or create documents record for this application
+    documents, created = await StudentApplicationDocuments.get_or_create(
+        admission_application_id=application_id
+    )
+    
+    # Parse field names from comma-separated string
+    field_names_list = [name.strip() for name in field_names[0].split(',') if name.strip()]
+    
+    # Validate field names
+    valid_fields = ['passport', 'last_graduation_certificate']
+    
+    # Check if number of files matches number of field names
+    if len(files) != len(field_names_list):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Number of files ({len(files)}) must match number of field names ({len(field_names_list)}). Field names: {field_names_list}"
+        )
+    
+    try:
+        for file, field_name in zip(files, field_names_list):
+            # Validate field name
+            if field_name not in valid_fields:
+                raise HTTPException(status_code=400, detail=f"Invalid field name: {field_name}")
+            
+            # Skip if file is empty
+            if not file or file.filename == "":
+                continue
+                
+            file_path = await upload_file(
+                file=file,
+                file_type=f'document_{field_name}',
+                allowed_types=['image/', 'application/pdf'],
+                max_size_mb=5,
+                media_dir='documents'
+            )
+            setattr(documents, field_name, file_path)
+        
+        await documents.save()
+        await documents.fetch_related('admission_application')
+        return documents
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+''' StudentAdmissionApplication CRUD End '''

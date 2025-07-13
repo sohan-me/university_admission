@@ -3,6 +3,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from api.router import api_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from core.tortoise_config import TORTOISE_ORM
 from commands.__init__ import create_superuser
 from fastapi.staticfiles import StaticFiles
 import os
@@ -24,12 +25,11 @@ app.add_middleware(
 # Include the API router
 app.include_router(api_router)
 
-# DB Initialization
+
 register_tortoise(
     app,
-    db_url="sqlite://db.sqlite3",
-    modules={"models": ["users.models", "engine.models"]},
-    generate_schemas=True,
+    config=TORTOISE_ORM,
+    generate_schemas=False,  # Let Aerich handle migrations
     add_exception_handlers=True,
 )
 

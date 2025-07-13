@@ -1,8 +1,11 @@
+aerich==0.9.1
 aiosqlite==0.21.0
 annotated-types==0.7.0
 anyio==4.9.0
+asyncclick==8.1.8.0
 bcrypt==4.3.0
 click==8.2.1
+dictdiffer==0.9.0
 dnspython==2.7.0
 ecdsa==0.19.1
 email_validator==2.2.0

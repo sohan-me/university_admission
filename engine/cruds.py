@@ -209,3 +209,289 @@ async def delete_course(course_id: int):
 
 
 ''' Course CRUD End '''
+
+
+
+
+''' AgentAdmissionApplication CRUD Start '''
+
+async def create_agent_admission_application(application_data: dict, agent_id: int):
+    # Set the agent
+    application_data['agent_id'] = agent_id
+    
+    # Handle foreign key relationships
+    course_id = application_data.pop('course_id', None)
+    if course_id:
+        course = await Course.get_or_none(id=course_id).prefetch_related('university', 'university__country')
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+        application_data['course'] = course
+    
+    university_one_id = application_data.pop('university_one_id', None)
+    university_two_id = application_data.pop('university_two_id', None)
+    university_three_id = application_data.pop('university_three_id', None)
+    
+    # Get universities and their countries for validation
+    universities = []
+    if university_one_id:
+        university_one = await University.get_or_none(id=university_one_id).prefetch_related('country')
+        if not university_one:
+            raise HTTPException(status_code=404, detail="University one not found")
+        application_data['university_one'] = university_one
+        universities.append(university_one)
+    
+    if university_two_id:
+        university_two = await University.get_or_none(id=university_two_id).prefetch_related('country')
+        if not university_two:
+            raise HTTPException(status_code=404, detail="University two not found")
+        application_data['university_two'] = university_two
+        universities.append(university_two)
+    
+    if university_three_id:
+        university_three = await University.get_or_none(id=university_three_id).prefetch_related('country')
+        if not university_three:
+            raise HTTPException(status_code=404, detail="University three not found")
+        application_data['university_three'] = university_three
+        universities.append(university_three)
+    
+    # Validate university count based on country
+    if universities:
+        # Check if all universities are from the same country
+        countries = set(uni.country.name for uni in universities)
+        if len(countries) > 1:
+            raise HTTPException(status_code=400, detail="All universities must be from the same country")
+        
+        country_name = universities[0].country.name
+        university_count = len(universities)
+        
+        # Malaysia and Cyprus can only have 1 university
+        if country_name in ['Malaysia', 'Cyprus'] and university_count > 1:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"For {country_name}, only one university is allowed"
+            )
+        
+        # Other countries can have 1-3 universities
+        elif country_name not in ['Malaysia', 'Cyprus'] and university_count > 3:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"For {country_name}, maximum 3 universities are allowed"
+            )
+    
+    application = await AgentAdmissionApplication.create(**application_data)
+    await application.fetch_related(
+        'course', 
+        'course__university', 
+        'course__university__country',
+        'university_one', 
+        'university_one__country',
+        'university_two', 
+        'university_two__country',
+        'university_three', 
+        'university_three__country',
+        'documents'
+    )
+    return application
+
+
+async def update_agent_admission_application(application_id: int, application_data: dict, agent_id: int):
+    application = await AgentAdmissionApplication.get_or_none(id=application_id, agent_id=agent_id)
+    if not application:
+        return None
+    
+    # Handle foreign key relationships
+    course_id = application_data.pop('course_id', None)
+    if course_id is not None:
+        if course_id:
+            course = await Course.get_or_none(id=course_id).prefetch_related('university', 'university__country')
+            if not course:
+                raise HTTPException(status_code=404, detail="Course not found")
+            application.course = course
+        else:
+            application.course = None
+    
+    university_one_id = application_data.pop('university_one_id', None)
+    university_two_id = application_data.pop('university_two_id', None)
+    university_three_id = application_data.pop('university_three_id', None)
+    
+    # Get universities and their countries for validation
+    universities = []
+    
+    if university_one_id is not None:
+        if university_one_id:
+            university_one = await University.get_or_none(id=university_one_id).prefetch_related('country')
+            if not university_one:
+                raise HTTPException(status_code=404, detail="University one not found")
+            application.university_one = university_one
+            universities.append(university_one)
+        else:
+            application.university_one = None
+    
+    if university_two_id is not None:
+        if university_two_id:
+            university_two = await University.get_or_none(id=university_two_id).prefetch_related('country')
+            if not university_two:
+                raise HTTPException(status_code=404, detail="University two not found")
+            application.university_two = university_two
+            universities.append(university_two)
+        else:
+            application.university_two = None
+    
+    if university_three_id is not None:
+        if university_three_id:
+            university_three = await University.get_or_none(id=university_three_id).prefetch_related('country')
+            if not university_three:
+                raise HTTPException(status_code=404, detail="University three not found")
+            application.university_three = university_three
+            universities.append(university_three)
+        else:
+            application.university_three = None
+    
+    # If universities are being updated, validate the count
+    if universities:
+        # Check if all universities are from the same country
+        countries = set(uni.country.name for uni in universities)
+        if len(countries) > 1:
+            raise HTTPException(status_code=400, detail="All universities must be from the same country")
+        
+        country_name = universities[0].country.name
+        university_count = len(universities)
+        
+        # Malaysia and Cyprus can only have 1 university
+        if country_name in ['Malaysia', 'Cyprus'] and university_count > 1:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"For {country_name}, only one university is allowed"
+            )
+        
+        # Other countries can have 1-3 universities
+        elif country_name not in ['Malaysia', 'Cyprus'] and university_count > 3:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"For {country_name}, maximum 3 universities are allowed"
+            )
+    
+    # Update other fields
+    for key, value in application_data.items():
+        if value is not None:
+            setattr(application, key, value)
+    
+    await application.save()
+    await application.fetch_related(
+        'course', 
+        'course__university', 
+        'course__university__country',
+        'university_one', 
+        'university_one__country',
+        'university_two', 
+        'university_two__country',
+        'university_three', 
+        'university_three__country',
+        'documents'
+    )
+    return application
+
+
+async def retrieve_agent_admission_application(application_id: int, agent_id: int):
+    application = await AgentAdmissionApplication.get_or_none(
+        id=application_id, 
+        agent_id=agent_id
+    ).prefetch_related(
+        'course', 
+        'course__university', 
+        'course__university__country',
+        'university_one', 
+        'university_one__country',
+        'university_two', 
+        'university_two__country',
+        'university_three', 
+        'university_three__country',
+        'documents'
+    )
+    if not application:
+        return None
+    return application
+
+
+async def list_agent_admission_applications(agent_id: int):
+    try:
+        applications = await AgentAdmissionApplication.filter(
+            agent_id=agent_id
+        ).prefetch_related(
+            'course', 
+            'course__university', 
+            'course__university__country',
+            'university_one', 
+            'university_one__country',
+            'university_two', 
+            'university_two__country',
+            'university_three', 
+            'university_three__country',
+            'documents'
+        )
+
+        return applications
+    except DoesNotExist:
+        return None
+
+
+async def delete_agent_admission_application(application_id: int, agent_id: int):
+    application = await AgentAdmissionApplication.get_or_none(id=application_id, agent_id=agent_id)
+    if not application:
+        return None
+    await application.delete()
+    return True
+
+
+''' AgentAdmissionApplication CRUD End '''
+
+
+
+
+''' StudentAdmissionApplication CRUD Start '''
+
+async def create_student_admission_application_crud(application_data: dict):
+    application = await StudentAdmissionApplication.create(**application_data)
+    await application.fetch_related('documents')
+    return application
+
+
+async def update_student_admission_application_crud(application_id: int, application_data: dict):
+    application = await StudentAdmissionApplication.get_or_none(id=application_id)
+    if not application:
+        return None
+    
+    # Update fields
+    for key, value in application_data.items():
+        if value is not None:
+            setattr(application, key, value)
+    
+    await application.save()
+    await application.fetch_related('documents')
+    return application
+
+
+async def retrieve_student_admission_application_crud(application_id: int):
+    application = await StudentAdmissionApplication.get_or_none(id=application_id).prefetch_related('documents')
+    if not application:
+        return None
+    return application
+
+
+async def list_student_admission_applications_crud():
+    try:
+        applications = await StudentAdmissionApplication.all().prefetch_related('documents')
+        return applications
+    except DoesNotExist:
+        return None
+
+
+async def delete_student_admission_application_crud(application_id: int):
+    application = await StudentAdmissionApplication.get_or_none(id=application_id)
+    if not application:
+        return None
+    await application.delete()
+    return True
+
+
+''' StudentAdmissionApplication CRUD End '''

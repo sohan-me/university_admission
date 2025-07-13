@@ -25,7 +25,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 async def get_active_user(current_user=Depends(get_current_user)):
     user = current_user
-    if user.is_active:
+    if user.is_verified:
         return user
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -40,4 +40,14 @@ async def get_admin_user(current_user=Depends(get_current_user)):
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Admin privileges required"
+    )
+
+
+async def get_agent_user(current_user=Depends(get_current_user)):
+    user = current_user
+    if not user.is_admin:  # Agents are non-admin users
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Agent privileges required"
     )

@@ -23,6 +23,7 @@ async def upload_file(
     MEDIA_DIR.mkdir(exist_ok=True)
   
     if not file:
+        print('File is empty', type(file))
         return None
     
     # Default allowed types if not specified

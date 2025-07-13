@@ -12,7 +12,8 @@ async def create_superuser():
         username="admin",
         email="admin@example.com",
         password_hash=get_password_hash("adminpassword"),
-        is_admin=True
+        is_admin=True,
+        is_verified=True
     )
     print("[INFO] Superuser created: username=admin, password=adminpassword")
 

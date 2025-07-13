@@ -194,7 +194,6 @@ async def upload_profile_file(
     try:
         file_path = await upload_file(
             file=nid_passport_file,
-            user_id=user_id,
             file_type="nid_passport",
             allowed_types=['image/', 'application/pdf'],
             max_size_mb=4,
@@ -203,7 +202,7 @@ async def upload_profile_file(
         
         # Update profile with file path
         profile.nid_passport_file = file_path
-        await profile.save()
+        await profile.save(update_fields=['nid_passport_file'])
         
         return profile
     except HTTPException as e:
