@@ -10,7 +10,7 @@ import os
 
 
 
-app = FastAPI(title="FastAPI Django-Like App")
+app = FastAPI(title="Aborad Univiersity Application")
 
 
 # Set Cors Headers

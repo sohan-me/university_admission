@@ -304,9 +304,14 @@ async def retrieve_admission_application(
     if active_user.is_admin:
         application = await AgentAdmissionApplication.get_or_none(id=application_id).prefetch_related(
             'course', 
+            'course__university', 
+            'course__university__country',
             'university_one', 
+            'university_one__country',
             'university_two', 
-            'university_three',
+            'university_two__country',
+            'university_three', 
+            'university_three__country',
             'documents'
         )
     else:
