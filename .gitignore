@@ -1,4 +1,25 @@
+ Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
 .env
-.__pycache__
-.db.sqlite3
+env/
+venv/
+
+# SQLite database files
 db.sqlite3
+db.sqlite3-wal
+db.sqlite3-shm
+
+# VSCode settings (optional)
+.vscode/
+
+# Ignore media uploads (optional, if you don't want to track user uploads)
+media/
+
+# Ignore OS files
+.DS_Store
+
+# Ignore migrations if you don't want to track them
+#migrations/

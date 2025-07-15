@@ -156,6 +156,33 @@ class StudentAdmissionApplicationResponse(StudentAdmissionApplicationBase):
 ''' Student Admission Application Schemas End '''
 
 
+
+''' Agent Application Commision Start '''
+
+class AgentApplicationCommissionBase(BaseModel):
+    student_fee: int
+    commission: int
+    commission_rate: int
+
+
+class AgentApplicationCommissionUpdate(BaseModel):
+    student_fee: Optional[int] = None
+    commission: Optional[int] = None
+    commission_rate: Optional[int] = None
+
+
+class AgentApplicationCommissionResponse(AgentApplicationCommissionBase):
+    id: int
+    admission_application_id: int
+
+    class Config:
+        orm_mode = True
+
+        
+
+''' Agent Application Commission End '''
+
+
 ''' Agent Admission Application Schemas Start'''
 
 
@@ -167,6 +194,7 @@ class AgentAdmissionApplicationBase(BaseModel):
     phone: str
     passport_no: str
     last_graduation: Optional[str] = None
+    status: Optional[str] = None
 
 
 class AgentAdmissionApplicationCreate(AgentAdmissionApplicationBase):
@@ -187,6 +215,8 @@ class AgentAdmissionApplicationUpdate(BaseModel):
     university_two_id: Optional[int] = None
     university_three_id: Optional[int] = None
     last_graduation: Optional[str] = None
+    status: Optional[str] = None
+    status: Optional[str] = None
 
 
 class AgentAdmissionApplicationResponse(AgentAdmissionApplicationBase):
@@ -197,6 +227,7 @@ class AgentAdmissionApplicationResponse(AgentAdmissionApplicationBase):
     university_two: Optional[UniversityResponse] = None
     university_three: Optional[UniversityResponse] = None
     documents: Optional[AgentApplicationDocumentsResponse] = None
+    commission: Optional[AgentApplicationCommissionResponse] = None
 
     class Config:
         orm_mode = True

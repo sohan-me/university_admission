@@ -44,6 +44,25 @@ class Course(models.Model):
 
 
 
+class ApplicationStatus(str, Enum):
+	NEW = 'New'
+	REVIEW = 'Review'
+	# WAIT_FOR_INVOICE = 'Waiting For Invoice'
+	COMMISSION_PAID = 'Commission Paid'
+	REJECTED = 'Rejected'
+	CONDITIONALOFFER = 'Conditional Offer'
+	UNCONDITIONALOFFER = 'Unconditional Offer'
+	CASDOCUMENTPENDING = 'CAS Documents Pending'
+	CASINTERVIEWPENDING = 'CAS InterView Pending'
+	CASINTERVIEWPASSED = 'CAS InterView Passed'
+	CASRECEIVED = 'CAS Received' 
+	APPLYFORVISA = 'Apply For Visa'
+	VISARECEIVED = 'Visa Received'
+	ENROLLEMENTPENDING = 'Enrollement Pending'
+	ENROLLEMENTCOMPLETE = 'Enrollement Complete'
+
+
+
 
 class AgentAdmissionApplication(models.Model):
 	id = fields.IntField(pk=True)
@@ -58,9 +77,29 @@ class AgentAdmissionApplication(models.Model):
 	university_two = fields.ForeignKeyField('models.University', on_delete=fields.SET_NULL, null=True, related_name='applications_two')
 	university_three = fields.ForeignKeyField('models.University', on_delete=fields.SET_NULL, null=True, related_name='applications_three')
 	last_graduation = fields.CharField(55, null=True, blank=True)
+	status = fields.CharEnumField(ApplicationStatus, default=ApplicationStatus.NEW)
+
+
+
 
 	def __str__(self):
 		return f'{self.first_name} {self.last_name}'
+
+
+
+
+class AgentApplicationCommission(models.Model):
+	id = fields.IntField(pk=True)
+	admission_application = fields.OneToOneField('models.AgentAdmissionApplication', on_delete=fields.CASCADE, related_name='commission')
+	student_fee = fields.IntField(default=0)
+	commission = fields.IntField(default=0)
+	commission_rate = fields.IntField(default=0)
+
+
+	def __str__(self):
+		return self.admission_application
+
+
 
 
 

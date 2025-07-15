@@ -1,6 +1,7 @@
 from .models import *
 from tortoise.exceptions import DoesNotExist
 from fastapi import UploadFile, HTTPException
+from typing import Optional
 
 ''' Country CRUD Start '''
 
@@ -289,13 +290,14 @@ async def create_agent_admission_application(application_data: dict, agent_id: i
         'university_two__country',
         'university_three', 
         'university_three__country',
-        'documents'
+        'documents',
+        'commission'
     )
     return application
 
 
-async def update_agent_admission_application(application_id: int, application_data: dict, agent_id: int):
-    application = await AgentAdmissionApplication.get_or_none(id=application_id, agent_id=agent_id)
+async def update_agent_admission_application(application_id: int, application_data: dict):
+    application = await AgentAdmissionApplication.get_or_none(id=application_id)
     if not application:
         return None
     
@@ -387,15 +389,15 @@ async def update_agent_admission_application(application_id: int, application_da
         'university_two__country',
         'university_three', 
         'university_three__country',
-        'documents'
+        'documents',
+        'commission'
     )
     return application
 
 
-async def retrieve_agent_admission_application(application_id: int, agent_id: int):
+async def retrieve_agent_admission_application(application_id: int):
     application = await AgentAdmissionApplication.get_or_none(
-        id=application_id, 
-        agent_id=agent_id
+        id=application_id,
     ).prefetch_related(
         'course', 
         'course__university', 
@@ -406,18 +408,26 @@ async def retrieve_agent_admission_application(application_id: int, agent_id: in
         'university_two__country',
         'university_three', 
         'university_three__country',
-        'documents'
+        'documents',
+        'commission'
     )
     if not application:
         return None
     return application
 
 
-async def list_agent_admission_applications(agent_id: int):
+async def list_agent_admission_applications(agent_id: Optional[int] = None, status: Optional[str] = None):
     try:
-        applications = await AgentAdmissionApplication.filter(
-            agent_id=agent_id
-        ).prefetch_related(
+        if not agent_id:
+            applications = AgentAdmissionApplication.all()
+        else:
+            applications = AgentAdmissionApplication.filter(agent_id=agent_id)
+
+        if status is not None:
+            applications = applications.filter(status=status)
+
+        # Only await at the end, after prefetch_related and all filters
+        return await applications.prefetch_related(
             'course', 
             'course__university', 
             'course__university__country',
@@ -427,16 +437,15 @@ async def list_agent_admission_applications(agent_id: int):
             'university_two__country',
             'university_three', 
             'university_three__country',
-            'documents'
-        )
-
-        return applications
+            'documents',
+            'commission'
+        ).all()
     except DoesNotExist:
         return None
 
 
-async def delete_agent_admission_application(application_id: int, agent_id: int):
-    application = await AgentAdmissionApplication.get_or_none(id=application_id, agent_id=agent_id)
+async def delete_agent_admission_application(application_id: int):
+    application = await AgentAdmissionApplication.get_or_none(id=application_id)
     if not application:
         return None
     await application.delete()
@@ -495,3 +504,38 @@ async def delete_student_admission_application_crud(application_id: int):
 
 
 ''' StudentAdmissionApplication CRUD End '''
+
+
+
+
+
+''' Agent Application Commision Start '''
+
+async def create_commission(application_id: int):
+    commisison = await AgentApplicationCommission.create(admission_application=application_id)
+    return commisison
+
+
+
+async def update_commission(application_id: int, commission_data: dict):
+    application = await AgentAdmissionApplication.get_or_none(id=application_id)
+    if not application:
+        return None
+
+    commission, created = await AgentApplicationCommission.get_or_create(admission_application=application)
+    for key, value in commission_data.items():
+        if value is not None:
+            setattr(commission, key, value)
+    await commission.save()
+    return commission
+
+
+
+''' Agent Application Commision End '''
+
+
+
+
+
+
+

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File,
 from typing import List, Optional, Union
 from .cruds import *
 from .schemas import *
-from .models import University, Course, AgentAdmissionApplication, AgentApplicationDocuments, StudentAdmissionApplication, StudentApplicationDocuments
+from .models import University, Course, AgentAdmissionApplication, AgentApplicationDocuments, StudentAdmissionApplication, StudentApplicationDocuments, AgentApplicationCommission
 from users.cruds import upload_file
 from users.dependencies import get_admin_user, get_agent_user, get_active_user
 
@@ -261,35 +261,47 @@ async def create_admission_application(
     application_obj = await create_agent_admission_application(application.dict(), agent_user.id)
     if not application_obj:
         raise HTTPException(status_code=400, detail='Could not create admission application!')
+
+    # Create commission for the application
+    await AgentApplicationCommission.get_or_create(admission_application=application_obj)
+
     return application_obj
 
 
+
+
 @router.get('/agent/admission-application', response_model=List[AgentAdmissionApplicationResponse])
-async def list_admission_applications(active_user=Depends(get_active_user)):
+async def list_admission_applications(status: Optional[str] = None, active_user=Depends(get_active_user)):
     if not active_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
 
-    # If admin, show all applications; if agent, show only their applications
+    applications = None
     if active_user.is_admin:
-        applications = await AgentAdmissionApplication.all().prefetch_related(
-            'course', 
-            'course__university', 
-            'course__university__country',
-            'university_one', 
-            'university_one__country',
-            'university_two', 
-            'university_two__country',
-            'university_three', 
-            'university_three__country',
-            'documents'
-        )
+        # applications = await AgentAdmissionApplication.all().prefetch_related(
+        #     'course', 
+        #     'course__university', 
+        #     'course__university__country',
+        #     'university_one', 
+        #     'university_one__country',
+        #     'university_two', 
+        #     'university_two__country',
+        #     'university_three', 
+        #     'university_three__country',
+        #     'documents',
+        #     'commission'
+        # )
+        applications = await list_agent_admission_applications(status=status)
 
     else:
-        applications = await list_agent_admission_applications(active_user.id)
+        applications = await list_agent_admission_applications(agent_id=active_user.id, status=status)
     
     if not applications:
         raise HTTPException(status_code=404, detail='No admission applications found.')
+
+
     return applications
+
+
 
 
 @router.get('/agent/admission-application/{application_id}', response_model=AgentAdmissionApplicationResponse)
@@ -312,7 +324,8 @@ async def retrieve_admission_application(
             'university_two__country',
             'university_three', 
             'university_three__country',
-            'documents'
+            'documents',
+            'commission'
         )
     else:
         application = await retrieve_agent_admission_application(application_id, active_user.id)
@@ -326,12 +339,12 @@ async def retrieve_admission_application(
 async def update_admission_application(
     application_id: int, 
     application: AgentAdmissionApplicationUpdate, 
-    agent_user=Depends(get_agent_user)
+    active_user=Depends(get_active_user)
 ):
-    if not agent_user:
+    if not active_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
 
-    application_obj = await update_agent_admission_application(application_id, application.dict(), agent_user.id)
+    application_obj = await update_agent_admission_application(application_id, application.dict())
     if not application_obj:
         raise HTTPException(status_code=404, detail='Admission application not found.')
     return application_obj
@@ -340,12 +353,12 @@ async def update_admission_application(
 @router.delete('/agent/admission-application/{application_id}')
 async def delete_admission_application(
     application_id: int, 
-    agent_user=Depends(get_agent_user)
+    active_user=Depends(get_active_user)
 ):
-    if not agent_user:
+    if not active_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
 
-    application_deleted = await delete_agent_admission_application(application_id, agent_user.id)
+    application_deleted = await delete_agent_admission_application(application_id)
     if not application_deleted:
         raise HTTPException(status_code=404, detail='Admission application not found.')
     return {'detail': 'Admission application deleted.'}
@@ -427,6 +440,30 @@ async def upload_application_documents(
 
 
 ''' AgentApplicationDocuments CRUD End '''
+
+
+''' AgentApplicationCommission CRUD Start '''
+
+@router.patch('/agent/commission/{application_id}', response_model=AgentApplicationCommissionResponse)
+async def patch_commission(
+    application_id: int, 
+    commission: AgentApplicationCommissionUpdate,
+    admin_user=Depends(get_admin_user)
+):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    application = await AgentAdmissionApplication.get_or_none(id=application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Admission application not found")
+
+    commission_obj = await update_commission(application_id, commission.dict())
+    if not commission_obj:
+        raise HTTPException(status_code=404, detail='Commission not found or could not be updated.')
+    return commission_obj
+
+
+''' AgentApplicationCommission CRUD End '''
 
 
 ''' StudentAdmissionApplication CRUD Start '''
@@ -554,3 +591,4 @@ async def upload_student_application_documents(
 
 
 ''' StudentAdmissionApplication CRUD End '''
+
