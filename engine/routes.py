@@ -277,19 +277,7 @@ async def list_admission_applications(status: Optional[str] = None, active_user=
 
     applications = None
     if active_user.is_admin:
-        # applications = await AgentAdmissionApplication.all().prefetch_related(
-        #     'course', 
-        #     'course__university', 
-        #     'course__university__country',
-        #     'university_one', 
-        #     'university_one__country',
-        #     'university_two', 
-        #     'university_two__country',
-        #     'university_three', 
-        #     'university_three__country',
-        #     'documents',
-        #     'commission'
-        # )
+       
         applications = await list_agent_admission_applications(status=status)
 
     else:
