@@ -108,26 +108,18 @@ async def retrieve_university(university_id: int):
 
 
 
-async def list_universities(university_type: Optional[str] = None):
+async def list_universities(university_type: Optional[str] = None, country: Optional[int] = None):
     try:
+        universities = await University.all().prefetch_related('country')
+        if country is not None:
+            universities = await University.filter(country=country).prefetch_related('country')
+        
         if university_type is not None:
-            universities = await University.filter(varsity_type=university_type).prefetch_related('country')
-            return universities
-        else:
-            universities = await University.all().prefetch_related('country')
-            return universities
+            universities = await University.filter(varsity_type=university_type).prefetch_related('country') 
+        return universities
+    
     except DoesNotExist:
         return None
-
-
-
-async def get_universities_by_country(country_id: int):
-	country = await Country.get_or_none(id=country_id)
-	if not country:
-		return None
-
-	universities = await University.filter(country=country).prefetch_related('country')
-	return list(universities) if universities else []
 
 
 
