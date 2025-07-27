@@ -9,12 +9,18 @@ from .models import User
 router = APIRouter()
 
 
-
 @router.post("/register", response_model=UserResponse)
 async def register_user(user: UserCreate) -> UserResponse:
     existing_user = await authenticate_user(user.username, user.password)
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
+    
+    if user.is_admin and user.is_admin == True:
+        user.is_admin = False
+    
+    if user.is_verified and is_verified == False:
+        user.is_verified = False
+    
     user_obj = await create_user(user.username, user.email, user.password, user.is_admin)
     return user_obj
 
