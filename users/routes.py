@@ -14,14 +14,7 @@ async def register_user(user: UserCreate) -> UserResponse:
     existing_user = await authenticate_user(user.username, user.password)
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
-    
-    if user.is_admin and user.is_admin == True:
-        user.is_admin = False
-    
-    if user.is_verified and is_verified == False:
-        user.is_verified = False
-    
-    user_obj = await create_user(user.username, user.email, user.password, user.is_admin)
+    user_obj = await create_user(username=user.username, email=user.email, password=user.password, is_admin=False)
     return user_obj
 
 
