@@ -32,36 +32,21 @@ CREATE TABLE IF NOT EXISTS "userprofile" (
 );
 CREATE TABLE IF NOT EXISTS "country" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    "name" VARCHAR(100) NOT NULL
-);
-CREATE TABLE IF NOT EXISTS "studentadmissionapplication" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     "name" VARCHAR(100) NOT NULL,
-    "phone" VARCHAR(20) NOT NULL,
-    "email" VARCHAR(100),
-    "residence_country" VARCHAR(50) NOT NULL,
-    "interest_country" VARCHAR(50) NOT NULL,
-    "intake_interest" VARCHAR(200) NOT NULL,
-    "last_graduation" VARCHAR(200) NOT NULL,
-    "interested_course" VARCHAR(200) NOT NULL,
-    "current_stage" VARCHAR(200)
-);
-CREATE TABLE IF NOT EXISTS "studentapplicationdocuments" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    "passport" VARCHAR(300),
-    "last_graduation_certificate" VARCHAR(300),
-    "admission_application_id" INT NOT NULL UNIQUE REFERENCES "studentadmissionapplication" ("id") ON DELETE CASCADE
+    "description" TEXT
 );
 CREATE TABLE IF NOT EXISTS "university" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     "varsity_type" VARCHAR(11) NOT NULL DEFAULT 'Public' /* PUBLIC: Public\nPRIVATE: Private\nSEMI_PUBLIC: Semi Public */,
     "name" VARCHAR(300) NOT NULL,
     "location" VARCHAR(300) NOT NULL,
+    "description" TEXT,
     "image" VARCHAR(255),
     "country_id" INT NOT NULL REFERENCES "country" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "course" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "name" VARCHAR(200) NOT NULL,
     "course_type" VARCHAR(200),
     "fee" INT,
     "image" VARCHAR(255),
@@ -75,11 +60,19 @@ CREATE TABLE IF NOT EXISTS "agentadmissionapplication" (
     "phone" VARCHAR(20) NOT NULL,
     "passport_no" VARCHAR(100) NOT NULL,
     "last_graduation" VARCHAR(55),
+    "status" VARCHAR(21) NOT NULL DEFAULT 'New' /* NEW: New\nREVIEW: Review\nCOMMISSION_PAID: Commission Paid\nREJECTED: Rejected\nCONDITIONALOFFER: Conditional Offer\nUNCONDITIONALOFFER: Unconditional Offer\nCASDOCUMENTPENDING: CAS Documents Pending\nCASINTERVIEWPENDING: CAS InterView Pending\nCASINTERVIEWPASSED: CAS InterView Passed\nCASRECEIVED: CAS Received\nAPPLYFORVISA: Apply For Visa\nVISARECEIVED: Visa Received\nENROLLEMENTPENDING: Enrollement Pending\nENROLLEMENTCOMPLETE: Enrollement Complete */,
     "agent_id" INT REFERENCES "user" ("id") ON DELETE SET NULL,
     "course_id" INT REFERENCES "course" ("id") ON DELETE SET NULL,
     "university_one_id" INT REFERENCES "university" ("id") ON DELETE SET NULL,
     "university_three_id" INT REFERENCES "university" ("id") ON DELETE SET NULL,
     "university_two_id" INT REFERENCES "university" ("id") ON DELETE SET NULL
+);
+CREATE TABLE IF NOT EXISTS "agentapplicationcommission" (
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "student_fee" INT NOT NULL DEFAULT 0,
+    "commission" INT NOT NULL DEFAULT 0,
+    "commission_rate" INT NOT NULL DEFAULT 0,
+    "admission_application_id" INT NOT NULL UNIQUE REFERENCES "agentadmissionapplication" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "agentapplicationdocuments" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -99,6 +92,25 @@ CREATE TABLE IF NOT EXISTS "agentapplicationdocuments" (
     "job_letter" VARCHAR(300),
     "others" VARCHAR(300),
     "admission_application_id" INT NOT NULL UNIQUE REFERENCES "agentadmissionapplication" ("id") ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "studentadmissionapplication" (
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "phone" VARCHAR(20) NOT NULL,
+    "email" VARCHAR(100),
+    "residence_country" VARCHAR(50) NOT NULL,
+    "interest_country" VARCHAR(50) NOT NULL,
+    "intake_interest" VARCHAR(200) NOT NULL,
+    "last_graduation" VARCHAR(200) NOT NULL,
+    "interested_course" VARCHAR(200) NOT NULL,
+    "current_stage" VARCHAR(200),
+    "preferred_university_id" INT NOT NULL REFERENCES "university" ("id") ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "studentapplicationdocuments" (
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "passport" VARCHAR(300),
+    "last_graduation_certificate" VARCHAR(300),
+    "admission_application_id" INT NOT NULL UNIQUE REFERENCES "studentadmissionapplication" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "aerich" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

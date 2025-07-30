@@ -51,8 +51,9 @@ class UniversityResponse(UniversityBase):
 
 
 class CourseBase(BaseModel):
-	course_type : str
-	fee : int
+    name: str
+    course_type: str
+    fee: int
 
 
 class CourseCreate(CourseBase):
@@ -60,9 +61,10 @@ class CourseCreate(CourseBase):
 
 
 class CourseUpdate(BaseModel):
-	course_type: Optional[str] = None
-	fee: Optional[int] = None
-	university_id: Optional[int] = None
+    name: Optional[str] = None
+    course_type: Optional[str] = None
+    fee: Optional[int] = None
+    university_id: Optional[int] = None
 	
 
 class CourseResponse(CourseBase):
@@ -123,13 +125,14 @@ class StudentAdmissionApplicationBase(BaseModel):
 
 
 class StudentAdmissionApplicationCreate(StudentAdmissionApplicationBase):
-    pass
+    preferred_university_id: Optional[int] = None
 
 
 class StudentAdmissionApplicationUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    preferred_university_id: Optional[int] = None
     residence_country: Optional[str] = None
     interest_country: Optional[str] = None
     intake_interest: Optional[str] = None
@@ -150,6 +153,7 @@ class StudentApplicationDocumentsResponse(BaseModel):
 
 class StudentAdmissionApplicationResponse(StudentAdmissionApplicationBase):
     id: int
+    preferred_university: UniversityResponse
     documents: Optional[StudentApplicationDocumentsResponse] = None
 
     class Config:

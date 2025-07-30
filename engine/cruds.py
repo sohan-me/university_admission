@@ -456,28 +456,78 @@ async def delete_agent_admission_application(application_id: int):
 ''' StudentAdmissionApplication CRUD Start '''
 
 async def create_student_admission_application_crud(application_data: dict):
+    country_name = application_data.get('interest_country', None)
+    preferred_university_id = application_data.get('preferred_university_id')
+    course_name = application_data.get('interested_course')
+
+    country = await Country.get_or_none(name=country_name)
+    if not country:
+        raise HTTPException(status_code=404, detail='Country not found')
+
+    preferred_university = await University.get_or_none(id=preferred_university_id)
+    if not preferred_university:
+        raise HTTPException(status_code=404, detail='Preferred university not found')
+
+    if preferred_university.country_id != country.id:
+        raise HTTPException(status_code=400, detail='Invalid university for selected country')
+
+    course = await Course.get_or_none(name=course_name)
+    if not course:
+        raise HTTPException(status_code=404, detail='Course not found')
+
+    if course.university_id != preferred_university.id:
+        raise HTTPException(status_code=404, detail='Course not found')
+
     application = await StudentAdmissionApplication.create(**application_data)
-    await application.fetch_related('documents')
+    await application.fetch_related('documents', 'preferred_university', 'preferred_university__country')
     return application
+
+
 
 
 async def update_student_admission_application_crud(application_id: int, application_data: dict):
     application = await StudentAdmissionApplication.get_or_none(id=application_id)
     if not application:
-        return None
-    
-    # Update fields
+        raise HTTPException(status_code=404, detail='Application not found')
+
+    country_name = application_data.get('interest_country')
+    preferred_university_id = application_data.get('preferred_university_id')
+    course_name = application_data.get('interested_course')
+
+    if country_name:
+        country = await Country.get_or_none(name=country_name)
+        if not country:
+            raise HTTPException(status_code=404, detail='Country not found')
+    else:
+        country = await Country.get_or_none(name=application.interest_country)
+
+    if preferred_university_id:
+        preferred_university = await University.get_or_none(id=preferred_university_id)
+        if not preferred_university:
+            raise HTTPException(status_code=404, detail='Preferred university not found')
+    else:
+        preferred_university = await University.get_or_none(id=application.preferred_university_id)
+
+    if preferred_university and country and preferred_university.country_id != country.id:
+        raise HTTPException(status_code=400, detail='University not found or invalid university for selected country')
+
+    if course_name:
+        course = await Course.get_or_none(name=course_name)
+        if not course or course.university_id != preferred_university.id:
+            raise HTTPException(status_code=404, detail='Course not found or invalid course for selected university')
+
     for key, value in application_data.items():
         if value is not None:
             setattr(application, key, value)
-    
+
     await application.save()
-    await application.fetch_related('documents')
+    await application.fetch_related('documents', 'preferred_university', 'preferred_university__country')
     return application
 
 
+
 async def retrieve_student_admission_application_crud(application_id: int):
-    application = await StudentAdmissionApplication.get_or_none(id=application_id).prefetch_related('documents')
+    application = await StudentAdmissionApplication.get_or_none(id=application_id).prefetch_related('documents', 'preferred_university', 'preferred_university__country')
     if not application:
         return None
     return application
@@ -485,7 +535,7 @@ async def retrieve_student_admission_application_crud(application_id: int):
 
 async def list_student_admission_applications_crud():
     try:
-        applications = await StudentAdmissionApplication.all().prefetch_related('documents')
+        applications = await StudentAdmissionApplication.all().prefetch_related('documents', 'preferred_university', 'preferred_university__country')
         return applications
     except DoesNotExist:
         return None

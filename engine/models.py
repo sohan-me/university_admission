@@ -37,6 +37,7 @@ class University(models.Model):
 class Course(models.Model):
 	id = fields.IntField(pk=True)
 	university = fields.ForeignKeyField('models.University', on_delete=fields.CASCADE, related_name='courses')
+	name = fields.CharField(200)
 	course_type = fields.CharField(200, null=True, blank=True)
 	fee = fields.IntField(null=True, blank=True)
 	image = fields.CharField(255, null=True, blank=True)
@@ -138,6 +139,7 @@ class StudentAdmissionApplication(models.Model):
 	name = fields.CharField(100)
 	phone = fields.CharField(20)
 	email = fields.CharField(100, null=True, blank=True)
+	preferred_university = fields.ForeignKeyField('models.University', on_delete=fields.CASCADE, related_name='sa_applications')
 	residence_country = fields.CharField(50)
 	interest_country = fields.CharField(50)
 	intake_interest = fields.CharField(200)

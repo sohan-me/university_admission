@@ -451,10 +451,7 @@ async def patch_commission(
 async def create_student_admission_application(
     application: StudentAdmissionApplicationCreate
 ):
-    application_obj = await create_student_admission_application_crud(application.dict())
-    if not application_obj:
-        raise HTTPException(status_code=400, detail='Could not create admission application!')
-    return application_obj
+    return await create_student_admission_application_crud(application.dict())
 
 
 @router.get('/student/admission-application', response_model=List[StudentAdmissionApplicationResponse])
