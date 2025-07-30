@@ -13,6 +13,7 @@ class VarsityType(str, Enum):
 class Country(models.Model):
 	id = fields.IntField(pk=True)
 	name = fields.CharField(100)
+	description = fields.TextField(null=True, blank=True)
 
 
 	def __str__(self):
@@ -26,6 +27,7 @@ class University(models.Model):
 	varsity_type = fields.CharEnumField(VarsityType, default=VarsityType.PUBLIC)
 	name = fields.CharField(300)
 	location = fields.CharField(300)
+	description = fields.TextField(null=True, blank=True)
 	image = fields.CharField(255, null=True, blank=True)
 
 	def __str__(self):

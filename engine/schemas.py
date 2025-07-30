@@ -5,7 +5,8 @@ from fastapi import UploadFile
 
 
 class CountryBase(BaseModel):
-	name : str
+    name: str
+    description: Optional[str] = None
 
 
 class CountryResponse(CountryBase):
@@ -17,9 +18,10 @@ class CountryResponse(CountryBase):
 
 
 class UniversityBase(BaseModel):
-	varsity_type : str
-	name : str
-	location : str
+    varsity_type: str
+    name: str
+    description: Optional[str] = None
+    location: str
 
 
 class UniversityCreate(UniversityBase):
@@ -30,10 +32,11 @@ class UniversityCreate(UniversityBase):
 
 
 class UniversityUpdate(BaseModel):
-	varsity_type: Optional[str] = None
-	name: Optional[str] = None
-	location: Optional[str] = None
-	country_id: Optional[int] = None
+    varsity_type: Optional[str] = None
+    name: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    country_id: Optional[int] = None
 
 
 class UniversityResponse(UniversityBase):
