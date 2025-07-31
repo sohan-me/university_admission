@@ -54,6 +54,7 @@ class CourseBase(BaseModel):
     name: str
     course_type: str
     fee: int
+    description: Optional[str] = None
 
 
 class CourseCreate(CourseBase):
@@ -64,6 +65,7 @@ class CourseUpdate(BaseModel):
     name: Optional[str] = None
     course_type: Optional[str] = None
     fee: Optional[int] = None
+    description: Optional[str] = None
     university_id: Optional[int] = None
 	
 

@@ -40,6 +40,7 @@ class Course(models.Model):
 	name = fields.CharField(200)
 	course_type = fields.CharField(200, null=True, blank=True)
 	fee = fields.IntField(null=True, blank=True)
+	description = fields.TextField(null=True, blank=True)
 	image = fields.CharField(255, null=True, blank=True)
 
 	def __str__(self):
