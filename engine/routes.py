@@ -454,7 +454,7 @@ async def retrieve_intake(intake_id: int):
     return intake
 
 
-@router.post('/intake/', response_model=IntakeResponse)
+@router.post('/intakes/', response_model=IntakeResponse)
 async def create_intake(intake_data: IntakeCreate, admin_user=Depends(get_admin_user)):
     if not admin_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
@@ -471,7 +471,7 @@ async def update_intake(intake_id: int, intake_data: IntakeUpdate, admin_user=De
     return intake
 
 
-@router.delete('/intake/{intake_id}/')
+@router.delete('/intakes/{intake_id}/')
 async def destroy_intake(intake_id: int, admin_user=Depends(get_admin_user)):
     if not admin_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
