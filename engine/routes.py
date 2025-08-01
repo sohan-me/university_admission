@@ -68,8 +68,6 @@ async def delete_a_country(country_id: int, admin_user=Depends(get_admin_user)):
 @router.get('/university', response_model=List[UniversityResponse])
 async def list_of_universities(university_type: Optional[str] = None, country: Optional[int] = None):
     universities = await list_universities(university_type, country)
-    if not universities:
-        raise HTTPException(status_code=404, detail='No universities found.')
     return universities
 
 

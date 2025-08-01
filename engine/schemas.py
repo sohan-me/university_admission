@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from fastapi import UploadFile
-
+from .models import VarsityType
 
 
 class CountryBase(BaseModel):
@@ -18,11 +18,13 @@ class CountryResponse(CountryBase):
 
 
 class UniversityBase(BaseModel):
-    varsity_type: str
+    varsity_type: VarsityType
     name: str
     description: Optional[str] = None
     location: str
 
+    class Config:
+        use_enum_values = True
 
 class UniversityCreate(UniversityBase):
 	country_id: int
@@ -32,7 +34,7 @@ class UniversityCreate(UniversityBase):
 
 
 class UniversityUpdate(BaseModel):
-    varsity_type: Optional[str] = None
+    varsity_type: Optional[VarsityType] = None
     name: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -46,7 +48,6 @@ class UniversityResponse(UniversityBase):
 
 	class Config:
 		orm_mode = True
-
 
 
 
