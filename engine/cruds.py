@@ -120,7 +120,7 @@ async def list_universities(university_type: Optional[str] = None, country: Opti
         universities = await universities.prefetch_related('country')
         if not universities:
             raise HTTPException(status_code=404, detail="No universities found for the given filters.")
-        return await universities
+        return universities
     
     except DoesNotExist:
         raise HTTPException(status_code=404, detail='no country objects found.')
