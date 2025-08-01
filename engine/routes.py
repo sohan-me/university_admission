@@ -74,8 +74,6 @@ async def list_of_universities(university_type: Optional[str] = None, country: O
 @router.get('/university/{university_id}', response_model=UniversityResponse)
 async def retrieve_a_university(university_id: int):
     university = await retrieve_university(university_id)
-    if not university:
-        raise HTTPException(status_code=404, detail='University not found.')
     return university
 
 
@@ -441,6 +439,47 @@ async def patch_commission(
 
 
 ''' AgentApplicationCommission CRUD End '''
+
+
+''' Intake Routes Start '''
+
+@router.get('/intakes/', response_model=List[IntakeResponse])
+async def list_intake():
+    intakes = await list_intake_curd()
+    return intakes
+
+@router.get('/intakes/{intake_id}/', response_model=IntakeResponse)
+async def retrieve_intake(intake_id: int):
+    intake = await retrieve_intake_crud(intake_id=intake_id)
+    return intake
+
+
+@router.post('/intake/', response_model=IntakeResponse)
+async def create_intake(intake_data: IntakeCreate, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    return await create_intake_crud(intake_data=intake_data.dict())
+
+
+@router.put('/intakes/{intake_id}/', response_model=IntakeResponse)
+async def update_intake(intake_id: int, intake_data: IntakeUpdate, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    intake = await update_intake_crud(intake_id=intake_id, intake_data=intake_data.dict())
+    return intake
+
+
+@router.delete('/intake/{intake_id}/')
+async def destroy_intake(intake_id: int, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+    return await destroy_intake_crud(intake_id=intake_id)
+
+
+''' Intake Routes End '''
+
 
 
 ''' StudentAdmissionApplication CRUD Start '''

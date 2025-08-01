@@ -132,6 +132,12 @@ class AgentApplicationDocuments(models.Model):
 		return self.admission_application
 
 
+class Intake(models.Model):
+	id = fields.IntField(pk=True)
+	name = fields.CharField(100)
+
+	def __str__(self):
+		return self.name
 
 
 

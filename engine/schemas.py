@@ -112,6 +112,30 @@ class AgentApplicationDocumentsResponse(BaseModel):
 
 ''' Agent Application Documents Schemas End'''
 
+''' Intake Admission Application Schemas Start '''
+
+class IntakeBase(BaseModel):
+    name: str
+
+
+class IntakeCreate(IntakeBase):
+    pass
+
+
+class IntakeUpdate(IntakeBase):
+    pass
+
+
+class IntakeResponse(IntakeBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+''' Intake Admission Application Schemas End '''
+
+
 
 ''' Student Admission Application Schemas Start '''
 

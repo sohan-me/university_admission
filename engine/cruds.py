@@ -102,7 +102,7 @@ async def update_university(university_id: int, university_data: dict):
 async def retrieve_university(university_id: int):
 	university = await University.get_or_none(id=university_id).prefetch_related('country')
 	if not university:
-		return None
+		raise HTTPException(status_code=404, detail='University not found.')
 
 	return university
 
@@ -454,6 +454,50 @@ async def delete_agent_admission_application(application_id: int):
 
 ''' AgentAdmissionApplication CRUD End '''
 
+
+''' Intake CRUD Start '''
+
+async def list_intake_curd():
+    intakes = await Intake.all()
+    if not intakes:
+        raise HTTPException(status_code=404, detail='No intakes are found.')
+    return intakes
+
+
+async def retrieve_intake_crud(intake_id: int):
+    intake = await Intake.get_or_none(id=intake_id)
+    if not intake:
+        raise HTTPException(status_code=404, detail='No intake found with given ID.')
+    return intake
+
+
+async def create_intake_crud(intake_data: dict):
+    intake = await Intake.create(**intake_data)
+    return intake
+
+
+async def update_intake_crud(intake_id: int, intake_data: dict):
+    intake = await Intake.get_or_none(id=intake_id)
+    if not intake:
+        raise HTTPException(status_code=404, detail='Intake not found.')
+
+    for key, value in intake_data.items():
+        if value is not None:
+            setattr(intake, key, value)
+    await intake.save()
+    return intake
+
+
+async def destroy_intake_crud(intake_id: int):
+    intake = await Intake.get_or_none(id=intake_id)
+    if not intake:
+        raise HTTPException(status_code=404, detail='Intake not found.')
+
+    await intake.delete()
+    return {'detail': 'Intake has been removed.'}
+
+
+''' Intake CRUD End '''
 
 
 
