@@ -152,6 +152,19 @@ async def list_of_courses():
     return courses
 
 
+@router.get('/course/filter/', response_model=List[CourseResponse])
+async def filter_courses(
+    country: Optional[int] = None,
+    university: Optional[int] = None,
+    university_type: Optional[str] = None,
+    course_type: Optional[str] = None,
+    budget: Optional[int] = None
+    ):
+
+    courses = await filter_course(country, university, university_type, course_type, budget)
+    return courses
+
+
 @router.get('/course/{course_id}', response_model=CourseResponse)
 async def retrieve_a_course(course_id: int):
     course = await retrieve_course(course_id)

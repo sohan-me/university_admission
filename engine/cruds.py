@@ -633,3 +633,38 @@ async def update_commission(application_id: int, commission_data: dict):
 
 
 
+
+''' Search and Filter CRUD Start '''
+
+async def filter_course(country: Optional[int] = None,
+    university: Optional[int] = None,
+    university_type: Optional[str] = None,
+    course_type: Optional[str] = None,
+    budget: Optional[int] = None):
+    
+    queryset = Course.filter()
+
+    if country:
+        queryset = queryset.filter(university__country_id=country)
+
+    if university:
+        queryset = queryset.filter(university_id=university)
+
+    if university_type:
+        queryset = queryset.filter(university__varsity_type=university_type)
+
+    if course_type:
+        queryset = queryset.filter(course_type=course_type)
+
+    if budget:
+        queryset = queryset.filter(fee__lte=budget)
+
+    courses = await queryset.prefetch_related('university', 'university__country')
+    if not courses:
+        raise HTTPException(status_code=404, detail='No courses found!')
+
+    return courses
+
+    
+
+''' Search and Filter CRUD End '''
