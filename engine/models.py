@@ -29,6 +29,7 @@ class University(models.Model):
 	location = fields.CharField(300)
 	description = fields.TextField(null=True, blank=True)
 	image = fields.CharField(255, null=True, blank=True)
+	website_link = fields.CharField(300, null=True, blank=True)
 
 	def __str__(self):
 		return self.name
@@ -168,3 +169,28 @@ class StudentApplicationDocuments(models.Model):
 	def __str__(self):
 		return self.admission_application
 
+
+
+class BlogOrEvent(str, Enum):
+	BLOG = 'Blog'
+	EVENT = 'Event'
+
+
+class BlogAndEvent(models.Model):
+	id = fields.IntField(pk=True)
+	type = fields.CharEnumField(enum_type=BlogOrEvent, default=BlogOrEvent.BLOG)
+	title = fields.CharField(255)
+	description = fields.TextField()
+	image = fields.CharField(350, null=True, blank=True)
+	published_at = fields.DatetimeField(auto_now_add=True)
+
+	def __str__(self):
+		return self.title
+
+
+class Offers(models.Model):
+	id = fields.IntField(pk=True)
+	image = fields.CharField(355, null=True, blank=True)
+
+	def __str__(self):
+		return self.title

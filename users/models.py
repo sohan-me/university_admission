@@ -29,8 +29,6 @@ class UserProfile(models.Model):
     no_of_deal = fields.IntField(default=0)
     office = fields.BooleanField(default=False)
     office_address = fields.CharField(255, null=True, blank=True)
-    student_country = fields.CharField(100)
-    student_destination_country = fields.CharField(100)
     special_service = fields.TextField(null=True, blank=True)
     nid_passport_file = fields.CharField(500, null=True)
 

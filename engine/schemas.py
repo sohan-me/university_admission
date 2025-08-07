@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from fastapi import UploadFile
 from .models import VarsityType
-
+from datetime import datetime
 
 class CountryBase(BaseModel):
     name: str
@@ -22,9 +22,11 @@ class UniversityBase(BaseModel):
     name: str
     description: Optional[str] = None
     location: str
+    website_link: Optional[str] = None
 
     class Config:
         use_enum_values = True
+
 
 class UniversityCreate(UniversityBase):
 	country_id: int
@@ -39,7 +41,8 @@ class UniversityUpdate(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
     country_id: Optional[int] = None
-
+    website_link: Optional[str] = None
+    
 
 class UniversityResponse(UniversityBase):
 	id : int
@@ -131,7 +134,6 @@ class IntakeResponse(IntakeBase):
 
     class Config:
         orm_mode = True
-
 
 ''' Intake Admission Application Schemas End '''
 
@@ -272,3 +274,33 @@ class AgentAdmissionApplicationResponse(AgentAdmissionApplicationBase):
 
 
 
+''' Blogs, Events and Offers SCHEMA Start '''
+
+class BlogAndEventBase(BaseModel):
+    type: str
+    title: str
+    description: str
+
+
+class BlogAndEventCreate(BlogAndEventBase):
+    pass
+
+class BlogAndEventUpdate(BaseModel):
+    type: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class BlogAndEventResponse(BlogAndEventBase):
+    id: int
+    image: Optional[str] = None
+    published_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class OffersResponse(BaseModel):
+    id: int
+    image: str
+
+''' Blogs, Events and Offers SCHEMA End '''

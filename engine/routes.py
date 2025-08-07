@@ -154,11 +154,10 @@ async def list_of_courses():
 
 @router.get('/course/filter/', response_model=List[CourseResponse])
 async def filter_courses(
+    search: Optional[str] = None,
     country: Optional[int] = None,
     university: Optional[int] = None,
-    university_type: Optional[str] = None,
     course_type: Optional[str] = None,
-    budget: Optional[int] = None
     ):
 
     courses = await filter_course(country, university, university_type, course_type, budget)
@@ -618,3 +617,105 @@ async def upload_student_application_documents(
 
 ''' StudentAdmissionApplication CRUD End '''
 
+
+
+''' Blogs, Events and Offers ROUTE Start '''
+
+@router.get('/blogs-or-events/', response_model=List[BlogAndEventResponse])
+async def list_blogs_or_events(type: Optional[str] = None):
+    blogs_or_events = await list_blog_or_event(type)
+    return blogs_or_events
+
+@router.get('/blogs-or-events/{id}/', response_model=BlogAndEventResponse)
+async def retrieve_a_blog_or_event(id: int):
+    blog_or_event = await retrieve_blog_or_event(id)
+    return blog_or_event
+
+@router.post('/blogs-or-events/', response_model=BlogAndEventResponse)
+async def create_a_blog_or_event(blog_data: BlogAndEventCreate, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    blog_or_event = await create_blog_or_event(blog_data.dict())
+    return blog_or_event
+
+@router.patch('/blogs-or-events/{id}/', response_model=BlogAndEventResponse)
+async def update_a_blog_or_event(id: int, blog_data: BlogAndEventUpdate, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    blog_or_event = await update_blog_or_event(id, blog_data.dict())
+    return blog_or_event
+
+@router.delete('/blogs-or-events/{id}/')
+async def delete_a_blog_or_event(id: int, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+    return await delete_blog_or_event(id)
+
+
+@router.post('/blogs-or-events/{id}/upload-image/', response_model=BlogAndEventResponse)
+async def upload_blog_or_event_document(id: int, image: UploadFile=File(...), admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    blog_or_event = await BlogAndEvent.get_or_none(id=id)
+    if not blog_or_event:
+        raise HTTPException(status_code=404, detail='Blog or Event object not found!')
+
+    try:
+        file_path = await upload_file(
+            file=image,
+            file_type='blog_or_event',
+            allowed_types=['image/'],
+            max_size_mb=5,
+            media_dir='images'
+        )
+
+        blog_or_event.image = file_path
+        await blog_or_event.save(update_fields=['image'])
+        return blog_or_event
+
+    except HTTPException as e:
+        return e
+
+
+@router.get('/offers/', response_model=List[OffersResponse])
+async def list_of_offers():
+    offers = await list_offers()
+    return offers
+
+
+@router.get('/offers/{id}/', response_model=OffersResponse)
+async def retrieve_a_offer(id: int):
+    offer = await retrieve_offer(id)
+    return offer
+
+
+
+@router.post('/offers/', response_model=OffersResponse)
+async def create_offers(image: UploadFile=File(...), admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+
+    try:
+        file_path = await upload_file(
+            file=image,
+            file_type='offers',
+            allowed_types=['image/'],
+            max_size_mb=5,
+            media_dir='images'
+        )
+
+        return await Offers.create(image=file_path)
+    except HTTPException as e:
+        return e
+
+
+@router.delete('/offers/{id}/')
+async def delete_a_offer(id: int, admin_user=Depends(get_admin_user)):
+    if not admin_user:
+        raise HTTPException(status_code=403, detail='Unauthorized access!')
+    return await delete_offer(id)
+
+''' Blogs, Events and Offers ROUTE Start '''

@@ -636,13 +636,17 @@ async def update_commission(application_id: int, commission_data: dict):
 
 ''' Search and Filter CRUD Start '''
 
-async def filter_course(country: Optional[int] = None,
+async def filter_course(
+    search: Optional[str] = None,
+    country: Optional[int] = None,
     university: Optional[int] = None,
-    university_type: Optional[str] = None,
     course_type: Optional[str] = None,
-    budget: Optional[int] = None):
+    ):
     
     queryset = Course.filter()
+
+    if search:
+        queryset = queryset.filter(name__icontains=search)
 
     if country:
         queryset = queryset.filter(university__country_id=country)
@@ -650,14 +654,9 @@ async def filter_course(country: Optional[int] = None,
     if university:
         queryset = queryset.filter(university_id=university)
 
-    if university_type:
-        queryset = queryset.filter(university__varsity_type=university_type)
-
     if course_type:
         queryset = queryset.filter(course_type=course_type)
 
-    if budget:
-        queryset = queryset.filter(fee__lte=budget)
 
     courses = await queryset.prefetch_related('university', 'university__country')
     if not courses:
@@ -668,3 +667,74 @@ async def filter_course(country: Optional[int] = None,
     
 
 ''' Search and Filter CRUD End '''
+
+
+''' Blogs, Events and Offers CRUD Start '''
+
+async def list_blog_or_event(type: Optional[str] = None):
+    queryset = BlogAndEvent.all()
+    if type:
+        queryset = queryset.filter(type=type)
+    blogs_or_events = await queryset
+    return blogs_or_events
+
+
+async def retrieve_blog_or_event(id: int):
+    blog_or_event = await BlogAndEvent.get_or_none(id=id)
+    if not blog_or_event:
+        raise HTTPException(status_code=404, detail='no blog or event found!')        
+    return blog_or_event
+
+
+async def create_blog_or_event(blog_data: dict):
+    blog_or_event = await BlogAndEvent.create(**blog_data)
+    return blog_or_event
+
+
+async def update_blog_or_event(id: int, blog_data: dict):
+    blog_or_event = await BlogAndEvent.get_or_none(id=id)
+    if not blog_or_event:
+        raise HTTPException(status_code=404, detail='no blog or event found!')
+
+    for key, value in blog_data.items():
+        if hasattr(blog_or_event, key) and value is not None:
+            setattr(blog_or_event, key, value)
+
+    await blog_or_event.save()
+    return blog_or_event
+
+
+
+async def delete_blog_or_event(id: int):
+    blog_or_event = await BlogAndEvent.get_or_none(id=id)
+    if not blog_or_event:
+        raise HTTPException(status_code=404, detail='no blog or event found!')
+
+    blog_or_event.delete()
+    return {'status_code': 200, 'success': 'Blog or Event has been deleted.'}
+
+
+async def list_offers():
+    offers = await Offers.all()
+    return offers
+
+async def retrieve_offer(id: int):
+    offer = await Offers.get_or_none(id=id)
+    if not offer:
+        raise HTTPException(status_code=404, detail='Offer not found!')
+        
+    return offer
+
+
+async def delete_offer(id: int):
+    offer = await Offers.get_or_none(id=id)
+    if not offer:
+        raise HTTPException(status_code=404, detail='no offer found!')
+
+    offer.delete()
+    return {'status_code': 200, 'success': 'Offer has been deleted.'}
+
+
+
+
+''' Blogs, Events and Offers CRUD End '''
