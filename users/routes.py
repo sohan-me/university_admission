@@ -37,15 +37,36 @@ async def create_admin(user: UserCreate, current_user=Depends(get_current_user))
     return user_obj
 
 
+@router.delete('/{id}/')
+async def delete_user(id: int, current_user=Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins only")
+    
+    if current_user.id == id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    user = await User.get_or_none(id=id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await user.delete()
+    return {'status_code': 200, 'success': 'User has been deleted.'}
 
-@router.post("/login", response_model=UserResponseToken)
-async def login(user: UserLogin):
-    user_obj = await authenticate_user(user.username, user.password)
-    if not user_obj:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-    token = create_access_token({"sub": user_obj.username})
-    return {'token': {"access_token": token, "token_type": "bearer"}, 'user':user_obj}
 
+@router.delete('/admin/{id}/')  # Using DELETE method
+async def delete_admin(id: int, current_user=Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins only")
+    
+    if current_user.id == id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    admin = await User.get_or_none(id=id, is_admin=True)  # Ensure target is admin
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    await admin.delete()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me", response_model=UserResponse)
