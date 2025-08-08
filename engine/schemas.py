@@ -234,6 +234,7 @@ class AgentAdmissionApplicationBase(BaseModel):
 
 
 class AgentAdmissionApplicationCreate(AgentAdmissionApplicationBase):
+    country_id: int
     course_id: Optional[int] = None
     university_one_id: Optional[int] = None
     university_two_id: Optional[int] = None
@@ -246,6 +247,7 @@ class AgentAdmissionApplicationUpdate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     passport_no: Optional[str] = None
+    country_id: Optional[int] = None
     course_id: Optional[int] = None
     university_one_id: Optional[int] = None
     university_two_id: Optional[int] = None
@@ -258,6 +260,7 @@ class AgentAdmissionApplicationUpdate(BaseModel):
 class AgentAdmissionApplicationResponse(AgentAdmissionApplicationBase):
     id: int
     agent_id: int
+    country_id: Optional[int] = None
     course: Optional[CourseResponse] = None
     university_one: Optional[UniversityResponse] = None
     university_two: Optional[UniversityResponse] = None

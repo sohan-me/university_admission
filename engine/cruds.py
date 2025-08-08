@@ -226,6 +226,7 @@ async def create_agent_admission_application(application_data: dict, agent_id: i
         course = await Course.get_or_none(id=course_id).prefetch_related('university', 'university__country')
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
+        
         application_data['course'] = course
     
     university_one_id = application_data.pop('university_one_id', None)
@@ -281,6 +282,7 @@ async def create_agent_admission_application(application_data: dict, agent_id: i
     
     application = await AgentAdmissionApplication.create(**application_data)
     await application.fetch_related(
+        'country',
         'course', 
         'course__university', 
         'course__university__country',

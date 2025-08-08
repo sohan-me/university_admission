@@ -77,6 +77,7 @@ class AgentAdmissionApplication(models.Model):
 	email = fields.CharField(55)
 	phone = fields.CharField(20)
 	passport_no = fields.CharField(100)
+	country = fields.ForeignKeyField('models.Country', on_delete=fields.SET_NULL, null=True)
 	course = fields.ForeignKeyField('models.Course', on_delete=fields.SET_NULL, null=True)
 	university_one = fields.ForeignKeyField('models.University', on_delete=fields.SET_NULL, null=True, related_name='applications_one')
 	university_two = fields.ForeignKeyField('models.University', on_delete=fields.SET_NULL, null=True, related_name='applications_two')

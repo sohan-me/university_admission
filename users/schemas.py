@@ -53,8 +53,6 @@ class UserProfileBase(BaseModel):
     no_of_deal: int = 0
     office: bool = False
     office_address: Optional[str] = None
-    student_country: str
-    student_destination_country: str
     special_service: Optional[str] = None
 
 
@@ -74,8 +72,6 @@ class UserProfileUpdate(BaseModel):
     no_of_deal: Optional[int] = None
     office: Optional[bool] = None
     office_address: Optional[str] = None
-    student_country: Optional[str] = None
-    student_destination_country: Optional[str] = None
     special_service: Optional[str] = None
 
 
