@@ -8,6 +8,10 @@ class CountryBase(BaseModel):
     name: str
     description: Optional[str] = None
 
+class CountryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 
 class CountryResponse(CountryBase):
 	id : int

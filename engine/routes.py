@@ -39,7 +39,7 @@ async def retrieve_a_country(country_id: int):
 
 
 @router.patch('/country/{country_id}', response_model=CountryResponse)
-async def update_a_country(country_id: int, country: CountryBase, admin_user=Depends(get_admin_user)):
+async def update_a_country(country_id: int, country: CountryUpdate, admin_user=Depends(get_admin_user)):
     if not admin_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
 
