@@ -2,6 +2,7 @@ import os
 import sys
 import asyncio
 from pathlib import Path
+from urllib.parse import parse_qs
 
 # Add the current directory to Python path
 current_dir = Path(__file__).parent
@@ -11,12 +12,8 @@ sys.path.insert(0, str(current_dir))
 from main import app
 from core.tortoise_config import TORTOISE_ORM
 from tortoise import Tortoise
-from fastapi import Request
-from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Send, Scope
-from commands.__init__ import create_superuser
 
-# Create a synchronous WSGI wrapper
 class SyncWSGIWrapper:
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -42,28 +39,26 @@ class SyncWSGIWrapper:
                     print("Superuser creation completed")
                 except Exception as e:
                     print(f"Superuser creation error: {str(e)}")
-                    # Continue anyway, superuser might already exist
-                    
             except Exception as e:
                 print(f"Database initialization error: {str(e)}")
-                # Continue anyway, let the app handle database errors
         
         # Convert WSGI environ to ASGI scope
         headers = []
         for k, v in environ.items():
             if k.startswith('HTTP_'):
-                # Convert HTTP_HEADER_NAME to header-name
                 header_name = k[5:].lower().replace('_', '-')
                 headers.append((header_name.encode(), v.encode()))
             elif k in ['CONTENT_TYPE', 'CONTENT_LENGTH']:
-                headers.append((k.lower().encode(), v.encode()))
+                headers.append((k.lower().replace('_', '-').encode(), v.encode()))
         
-        # Debug: Print important headers
-        print(f"Request method: {environ.get('REQUEST_METHOD', 'GET')}")
-        print(f"Content-Type: {environ.get('CONTENT_TYPE', 'None')}")
-        print(f"Content-Length: {environ.get('CONTENT_LENGTH', 'None')}")
-        print(f"Authorization: {environ.get('HTTP_AUTHORIZATION', 'None')}")
-        print(f"Total headers: {len(headers)}")
+        # Handle query string
+        query_string = environ.get('QUERY_STRING', '').encode()
+        if query_string:
+            scope['query_string'] = query_string
+        
+        # Handle multipart form data (file uploads)
+        content_type = environ.get('CONTENT_TYPE', '')
+        is_multipart = content_type.startswith('multipart/form-data')
         
         scope = {
             'type': 'http',
@@ -74,50 +69,48 @@ class SyncWSGIWrapper:
             'server': (environ.get('SERVER_NAME', ''), int(environ.get('SERVER_PORT', 0))),
             'client': (environ.get('REMOTE_ADDR', ''), int(environ.get('REMOTE_PORT', 0))),
             'path': environ.get('PATH_INFO', ''),
-            'query_string': environ.get('QUERY_STRING', '').encode(),
+            'query_string': query_string,
             'headers': headers,
             'raw_path': environ.get('PATH_INFO', '').encode(),
         }
-        
-        # Get request body from WSGI environ
-        content_length = int(environ.get('CONTENT_LENGTH', 0))
-        request_body = b''
-        
-        if content_length > 0:
-            try:
-                request_body = environ.get('wsgi.input').read(content_length)
-                print(f"Request body length: {len(request_body)} bytes")
-                if request_body:
-                    print(f"Request body preview: {request_body[:100]}")
-            except Exception as e:
-                print(f"Error reading request body: {str(e)}")
-                request_body = b''
         
         # Create response collector
         response_data = {'status': 200, 'headers': [], 'body': b''}
         
         async def receive():
-            return {'type': 'http.request', 'body': request_body}
+            # For multipart forms, we need to read differently
+            if is_multipart:
+                # WSGI already handles multipart parsing, we just pass the raw input
+                input_stream = environ['wsgi.input']
+                content_length = int(environ.get('CONTENT_LENGTH', 0))
+                return {
+                    'type': 'http.request',
+                    'body': input_stream.read(content_length),
+                    'more_body': False
+                }
+            else:
+                # Regular request body handling
+                content_length = int(environ.get('CONTENT_LENGTH', 0))
+                request_body = b''
+                if content_length > 0:
+                    request_body = environ['wsgi.input'].read(content_length)
+                return {
+                    'type': 'http.request',
+                    'body': request_body,
+                    'more_body': False
+                }
         
         async def send(message):
             if message['type'] == 'http.response.start':
                 response_data['status'] = message['status']
-                response_data['headers'] = message['headers']
+                response_data['headers'] = message.get('headers', [])
             elif message['type'] == 'http.response.body':
-                response_data['body'] += message['body']
+                response_data['body'] += message.get('body', b'')
         
         # Run the ASGI app
         try:
-            # Debug: Print headers for authentication debugging
-            auth_header = environ.get('HTTP_AUTHORIZATION', '')
-            if auth_header:
-                print(f"Authorization header found: {auth_header[:20]}...")
-            else:
-                print("No Authorization header found")
-            
             self.loop.run_until_complete(self.app(scope, receive, send))
         except Exception as e:
-            # Handle errors
             response_data['status'] = 500
             response_data['body'] = f'Internal Server Error: {str(e)}'.encode()
             import traceback
@@ -125,11 +118,11 @@ class SyncWSGIWrapper:
             print(traceback.format_exc())
         
         # Send WSGI response
-        status_line = f"{response_data['status']} OK"
+        status_line = f"{response_data['status']} {environ.get('STATUS', 'OK')}"
         headers = [(k.decode(), v.decode()) for k, v in response_data['headers']]
         start_response(status_line, headers)
         
         return [response_data['body']]
 
 # Create the WSGI application
-application = SyncWSGIWrapper(app) 
+application = SyncWSGIWrapper(app)
