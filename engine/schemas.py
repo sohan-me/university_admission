@@ -311,3 +311,7 @@ class OffersResponse(BaseModel):
     image: str
 
 ''' Blogs, Events and Offers SCHEMA End '''
+
+class Base64FileUpload(BaseModel):
+    file_data: str  # base64 encoded file
+    filename: str
