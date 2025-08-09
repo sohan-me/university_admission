@@ -5,9 +5,6 @@ from .schemas import *
 from .models import University, Course, AgentAdmissionApplication, AgentApplicationDocuments, StudentAdmissionApplication, StudentApplicationDocuments, AgentApplicationCommission
 from users.cruds import upload_file
 from users.dependencies import get_admin_user, get_agent_user, get_active_user
-import base64
-import io
-from PIL import Image
 
 router = APIRouter()
 
@@ -42,7 +39,7 @@ async def retrieve_a_country(country_id: int):
 
 
 @router.patch('/country/{country_id}', response_model=CountryResponse)
-async def update_a_country(country_id: int, country: CountryUpdate, admin_user=Depends(get_admin_user)):
+async def update_a_country(country_id: int, country: CountryBase, admin_user=Depends(get_admin_user)):
     if not admin_user:
         raise HTTPException(status_code=403, detail='Unauthorized access!')
 
@@ -140,49 +137,6 @@ async def upload_university_image(university_id: int, university_image: UploadFi
         return e
 
 
-@router.post('/university/{university_id}/upload-image-base64/', response_model=UniversityResponse)
-async def upload_university_image_base64(
-    university_id: int, 
-    upload_data: Base64FileUpload,
-    admin_user=Depends(get_admin_user)
-):
-    if not admin_user:
-        raise HTTPException(status_code=403, detail='Unauthorized access!')
-
-    university = await University.get_or_none(id=university_id).prefetch_related('country')
-    if not university:
-        raise HTTPException(status_code=404, detail='Not found!')
-
-    try:
-        # Decode base64 data
-        file_bytes = base64.b64decode(upload_data.file_data)
-        
-        # Create a file-like object
-        file_obj = io.BytesIO(file_bytes)
-        file_obj.name = upload_data.filename
-        
-        # Create UploadFile object
-        from fastapi import UploadFile
-        upload_file = UploadFile(
-            filename=filename,
-            file=file_obj,
-            content_type="image/jpeg"  # Adjust based on file type
-        )
-        
-        file_path = await upload_file(
-            file=upload_file,
-            file_type='university_image',
-            allowed_types=['image/'],
-            max_size_mb=5,
-            media_dir='images'
-        )
-
-        university.image = file_path
-        await university.save(update_fields=['image'])
-        return university
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f'Upload failed: {str(e)}')
 
 
 ''' University CRUD End '''
@@ -206,7 +160,7 @@ async def filter_courses(
     course_type: Optional[str] = None,
     ):
 
-    courses = await filter_course(country, university, university_type, course_type, budget)
+    courses = await filter_course(country, university, course_type, budget)
     return courses
 
 
@@ -272,7 +226,7 @@ async def upload_course_image(course_id: int, course_image: UploadFile=File(...)
     try:
         file_path = await upload_file(
             file=course_image,
-            file_type=f'course_image',
+            file_type='course_image',
             allowed_types = ['image/'],
             max_size_mb=5,
             media_dir='images'
@@ -736,7 +690,6 @@ async def list_of_offers():
 async def retrieve_a_offer(id: int):
     offer = await retrieve_offer(id)
     return offer
-
 
 
 @router.post('/offers/', response_model=OffersResponse)
