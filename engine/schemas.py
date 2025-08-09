@@ -92,6 +92,9 @@ class CourseResponse(CourseBase):
 class AgentApplicationDocumentsCreate(BaseModel):
     admission_application_id: int
 
+    class Config:
+        use_enum_values = True
+
 
 class AgentApplicationDocumentsResponse(BaseModel):
     id: int

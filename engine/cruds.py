@@ -733,7 +733,7 @@ async def delete_offer(id: int):
     if not offer:
         raise HTTPException(status_code=404, detail='no offer found!')
 
-    offer.delete()
+    await offer.delete()
     return {'status_code': 200, 'success': 'Offer has been deleted.'}
 
 
