@@ -160,7 +160,7 @@ async def filter_courses(
     course_type: Optional[str] = None,
     ):
 
-    courses = await filter_course(country, university, course_type, budget)
+    courses = await filter_course(search, country, university, course_type)
     return courses
 
 
